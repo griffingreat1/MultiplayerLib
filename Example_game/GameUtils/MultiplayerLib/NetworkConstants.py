@@ -1,0 +1,11 @@
+from datetime import datetime
+
+BUFFER_SIZE = 4096
+DEFAULT_PORT = 5000
+
+DEFAULT_KEY = "encryptionKeyForFernetEncryption"
+DEFAULT_SALT = 2815
+
+POSITIONUPDATEINTERVAL = 1/30
+
+POSITION_UPDATE_PACKET_IN_MAIN_LOOP = False
