@@ -3,6 +3,15 @@
 MultiplayerLib is a lightweight UDP networking library intended for simple real-time peer-to-peer games. It aims to be minimal and easy to integrate while providing optional packet compression and encryption for reliability and privacy.
 
 ---
+## Table of Contents
+- [Features](#✨-features)
+- [Installation](#📦-installation)
+- [Quick Start](#quick-start-example)
+- [API Reference](#api-reference)
+- [Packet Examples](#packet-examples-and-typical-usage-in-a-game)
+- [Troubleshooting](#troubleshooting--tips)
+- [Security](#security-notes)
+- [Contributing](#contributing)
 
 ## ✨ Features
 
@@ -132,10 +141,10 @@ These are defined in `NetworkConstants.py`:
 
 ---
 
-## Security notes
+## Security Notes
 
-- Default key/salt values are provided for convenience but you should generate and use a secure key and unique salt in production.
-- Use a sufficiently random string for the `encryption_key` and a unique integer salt.
+- Default key/salt values are provided for convenience. **In production, generate or prompt the user for a secure key and a unique salt.**
+- Use a sufficiently random string for the `encryption_key` and a unique integer for the salt to ensure proper encryption.
 
 ---
 
