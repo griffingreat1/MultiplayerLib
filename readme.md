@@ -40,7 +40,7 @@ MultiplayerLib is a lightweight and extensible UDP networking library designed f
 
 The demo is written using pygame and showcases practical usage.
 
-## ❗ Current Limitations
+## Current Limitations
 
 - optimized for 1v1 (two peers)
 
