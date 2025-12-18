@@ -147,6 +147,9 @@ These are defined in `NetworkConstants.py`:
 - Use a sufficiently random string for the `encryption_key` and a unique integer for the salt to ensure proper encryption.
 
 ---
+## License
+
+MultiplayerLib is licensed under the MIT License. See the [LICENSE](../LICENSE) file for details.
 
 ## Contributing
 

@@ -1,3 +1,10 @@
+# MultiplayerLib — MIT License
+# Copyright (c) 2025 griffingreat1
+#
+# This file is part of MultiplayerLib.
+# You may use, copy, modify, merge, publish, distribute, sublicense,
+# and/or sell copies of this file under the terms of the MIT License.
+# See the LICENSE file in the repository root for full license text.
 from GameUtils.MultiplayerLib.NetworkConstants import *
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives import hashes

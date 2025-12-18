@@ -54,6 +54,10 @@ The demo is written using pygame and showcases practical usage.
 
 - packet ordering & reliability
 
+## License
+
+This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
+
 # 🤝 Contributing
 
 Contributions and merge requests are welcome!
