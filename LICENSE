@@ -1,4 +1,4 @@
-MIT License for MultiplayerLib
+MIT License
 
 Copyright (c) 2025 griffingreat1
 
@@ -19,6 +19,7 @@ HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTIO
 CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE 
 OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-Note: This license applies **only to the MultiplayerLib code**. No restrictions are placed 
-on the included demo game code — you are free to use, modify, or distribute the demo code 
-as you wish.
+---
+
+Note: This license applies **only to the MultiplayerLib library**.  
+The included demo game code is **not covered by this license** and can be used, modified, or distributed freely.
