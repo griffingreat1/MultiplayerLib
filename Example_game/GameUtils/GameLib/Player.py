@@ -29,6 +29,7 @@ class Player:
         self.reloading = False
         self.deaths = 0
         self.ID = random.randint(0,100000)
+        self.packetNum = 0
     
     def draw(self,window,font,textsurface=None):
         if not textsurface:
@@ -158,17 +159,20 @@ class Player:
         """
         constructs a packet to send to the server. the packet is a dictionary list.
         """
+        self.packetNum += 1
         msg = {
             "type":"playerdata",
+            "packetNum":self.packetNum,
             "position":{
-                "x":self.rect.centerx,
-                "y":self.rect.centery,
-                "rotation":self.rot
+                "x":round(self.rect.centerx),
+                "y":round(self.rect.centery),
+                "rotation":round(self.rot,3)
             },
             "velocity":[self.dx,self.dy],
             "health":self.health,
             "timestamp":time.time(),
-            "deaths":self.deaths
+            "deaths":self.deaths,
+            "ID":self.ID
         }
         return msg
 
@@ -200,7 +204,9 @@ class Player:
         return self.rot
 
 class ConnectedPlayer(Player):
-    def __init__(self,particleManager,color):
+    registry = {}
+    _snapshot = {}
+    def __init__(self,particleManager,color,ID):
         super().__init__(particleManager,color)
         pos = [-100,-100]
         self.rect = pygame.Rect(pos[0],pos[1],2*self.radius,2*self.radius)
@@ -212,7 +218,10 @@ class ConnectedPlayer(Player):
         self.health = 100
         self.gunlength = self.radius*5/2
         self.latency = 0
+        self.goalPosition = [0,0]
         self.lastKnownVelocity = [0,0]
+        self.ID = ID
+        self.latestPacketTime = time.time()
     
     def draw(self,window,font,textsurface=None):
         if not textsurface:
@@ -227,21 +236,28 @@ class ConnectedPlayer(Player):
         textsurface.blit(pingText,pingTextRect)
 
     def update(self,dt):
-        self.rect.centerx += self.lastKnownVelocity[0]*dt
-        self.rect.centery += self.lastKnownVelocity[1]*dt
+        # self.rect.centerx += self.lastKnownVelocity[0]*dt
+        # self.rect.centery += self.lastKnownVelocity[1]*dt
+        self.rect.centerx = pygame.math.lerp(self.rect.centerx,self.goalPosition[0],5*dt)
+        self.rect.centery = pygame.math.lerp(self.rect.centery,self.goalPosition[1],5*dt)
         self.head.center = self.rect.center
     
     def pointAtPos(self,pos):
         pass
     
     def updateWithPositionPacket(self,datas):
-        self.rect.centerx = datas.get("position").get("x",0)
-        self.rect.centery = datas.get("position").get("y",0)
-        self.lastKnownVelocity = datas.get("velocity")
-        self.rot = datas.get("position").get("rotation",0)
-        self.health = datas.get("health",-1)
-        self.deaths = datas.get("deaths",0)
-        self.getLatency(datas)
+        if datas.get("packetNum",0) > self.packetNum:
+            self.goalPosition[0] = datas.get("position").get("x",0)
+            self.goalPosition[1] = datas.get("position").get("y",0)
+            self.rot = datas.get("position").get("rotation",0)
+            self.health = datas.get("health",-1)
+            self.deaths = datas.get("deaths",0)
+            self.getLatency(datas)
+            self.packetNum = datas.get("packetNum")
+        self.heartbeat()
+    
+    def heartbeat(self):
+        self.latestPacketTime = time.time()
     
     def getLatency(self,datas):
         self.latency = time.time()-datas.get("timestamp",time.time())
@@ -255,3 +271,51 @@ class ConnectedPlayer(Player):
         textRect = text.get_rect()
         textRect.midtop = self.rect.midbottom
         return text,textRect
+
+    def get_is_alive(self):
+        return time.time()-self.latestPacketTime < PEER_TIMEOUT
+
+    @classmethod
+    def getInstance(cls, particleManager, color, value):
+        with cls.registry_lock:
+            instance = cls.registry.get(value)
+            if instance is None:
+                instance = cls(particleManager, color, value)
+                cls.registry[value] = instance
+            return instance
+
+    @classmethod
+    def updateAll(cls, dt):
+        cls.snapshot_registry()
+
+        for instance in cls._snapshot.values():
+            instance.update(dt)
+
+    @classmethod
+    def hitCheckAll(cls, projectiles):
+        for instance in cls._snapshot.values():
+            instance.hitCheck(projectiles)
+
+    @classmethod
+    def drawAll(cls, window, font):
+        for instance in cls._snapshot.values():
+            instance.draw(window, font)
+
+    @classmethod
+    def callExternalMethodOnAll(cls, func, **args):
+        for instance in cls._snapshot.values():
+            func(instance, **args)
+    
+    @classmethod
+    def snapshot_registry(cls):
+        """
+        Called once per frame at the start of updateAll().
+        Produces a stable view of all alive players.
+        """
+        with cls.registry_lock:
+            cls._snapshot = {
+                id: instance
+                for id, instance in cls.registry.items()
+                if instance.get_is_alive()
+            }
+            cls.registry = cls._snapshot
