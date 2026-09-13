@@ -206,6 +206,7 @@ class Player:
 class ConnectedPlayer(Player):
     registry = {}
     _snapshot = {}
+    registry_lock = threading.Lock()
     def __init__(self,particleManager,color,ID):
         super().__init__(particleManager,color)
         pos = [-100,-100]
@@ -238,8 +239,8 @@ class ConnectedPlayer(Player):
     def update(self,dt):
         # self.rect.centerx += self.lastKnownVelocity[0]*dt
         # self.rect.centery += self.lastKnownVelocity[1]*dt
-        self.rect.centerx = pygame.math.lerp(self.rect.centerx,self.goalPosition[0],5*dt)
-        self.rect.centery = pygame.math.lerp(self.rect.centery,self.goalPosition[1],5*dt)
+        self.rect.centerx = pygame.math.lerp(self.rect.centerx,self.goalPosition[0],20*dt)
+        self.rect.centery = pygame.math.lerp(self.rect.centery,self.goalPosition[1],20*dt)
         self.head.center = self.rect.center
     
     def pointAtPos(self,pos):

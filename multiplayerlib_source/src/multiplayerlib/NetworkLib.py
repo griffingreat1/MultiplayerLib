@@ -1,10 +1,5 @@
-# MultiplayerLib — MIT License
-# Copyright (c) 2025 griffingreat1
-#
-# This file is part of MultiplayerLib.
-# You may use, copy, modify, merge, publish, distribute, sublicense,
-# and/or sell copies of this file under the terms of the MIT License.
-# See the LICENSE file in the repository root for full license text.
+# this file is part of MultiplayerLib, which is under an MIT license.
+# see LICENSE file at root of this repository for details.
 
 """
 Network utilities and a NetworkManager for peer-to-peer UDP communication.
@@ -19,8 +14,8 @@ import orjson
 import socket
 import threading
 import time
-from GameUtils.MultiplayerLib.NetworkConstants import *
-from GameUtils.MultiplayerLib.EncryptionManager import EncryptionManager
+from multiplayerlib.NetworkConstants import *
+from multiplayerlib.EncryptionManager import EncryptionManager
 import zlib
 from queue import Queue
 

@@ -1,5 +1,3 @@
-import ctypes
-import random
 import threading
 import time
 from GameUtils import *
@@ -69,15 +67,15 @@ class Game:
             print("encryption key (leave blank to use a default key):")
             key = input("> ")
             if key == "":
-                key = MultiplayerLib.DEFAULT_KEY
+                key = multiplayerlib.DEFAULT_KEY
             try:
                 print("encryption salt (an integer, if invalid input or no input is given, salt will be default):")
                 salt = int(input("> "))
             except:
-                salt = MultiplayerLib.DEFAULT_SALT
+                salt = multiplayerlib.DEFAULT_SALT
                 if self.is_host:
                     print("salt is default value")
-        self.networkManager = MultiplayerLib.NetworkManager(self.is_host,self.host_ip,use_encryption=self.useEncryption,encryption_key=key,encryption_salt=salt)
+        self.networkManager = multiplayerlib.NetworkManager(self.is_host,self.host_ip,use_encryption=self.useEncryption,encryption_key=key,encryption_salt=salt)
         return self.networkManager
     
     # MULTIPLAYER PACKET HANDLING
@@ -99,7 +97,7 @@ class Game:
             if not self.networkLoop:
                 break
             self._update_network()
-            time.sleep(MultiplayerLib.POSITIONUPDATEINTERVAL)
+            time.sleep(GameLib.POSITIONUPDATEINTERVAL)
 
     def safe_recv_msg(self):
         """
@@ -160,7 +158,7 @@ class Game:
             if projectile.hit:
                 self.projectiles.remove(projectile)
 
-        if MultiplayerLib.POSITION_UPDATE_PACKET_IN_MAIN_LOOP:
+        if GameLib.POSITION_UPDATE_PACKET_IN_MAIN_LOOP:
             self._update_network()
 
     def draw(self):
@@ -220,7 +218,7 @@ class Game:
 
     def main(self):
         self.gameloop = True
-        if not MultiplayerLib.POSITION_UPDATE_PACKET_IN_MAIN_LOOP:
+        if not GameLib.POSITION_UPDATE_PACKET_IN_MAIN_LOOP:
             sendthr = threading.Thread(target=self.update_network_thread,daemon=True)
             sendthr.start()
         while self.gameloop:
