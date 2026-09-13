@@ -44,7 +44,6 @@ run the install command to install the package
 ### Host (Server)
 
 ```
-py
 mgr = NetworkManager(
     is_host=True,
     base_port=5000,
@@ -199,16 +198,6 @@ Common patterns used in games:
 
 ---
 
-## Important Constants
-
-Defined in `NetworkConstants.py`:
-
-- `BUFFER_SIZE = 4096`
-- `DEFAULT_PORT = 5000`
-- `POSITIONUPDATEINTERVAL = 1/30`
-- `DEFAULT_KEY`, `DEFAULT_SALT`
-
----
 
 ## Troubleshooting & Tips
 
