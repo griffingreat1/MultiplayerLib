@@ -2,6 +2,7 @@
 
 MultiplayerLib is a lightweight UDP networking library designed for simple real-time multiplayer games. It provides a minimal, easy-to-integrate API for fast client-server communication with optional compression and encryption.
 
+source code can be found [here](https://github.com/griffingreat1/MultiplayerLib)
 ---
 
 ## Table of Contents
@@ -13,7 +14,7 @@ MultiplayerLib is a lightweight UDP networking library designed for simple real-
 - [Packet Examples](#packet-examples)
 - [Troubleshooting](#troubleshooting--tips)
 - [Security Notes](#security-notes)
-- [Contributing](#contributing)
+- [Contributors](#contributors)
 
 ---
 
@@ -43,7 +44,7 @@ run the install command to install the package
 
 ### Host (Server)
 
-```
+```py
 mgr = NetworkManager(
     is_host=True,
     base_port=5000,
@@ -219,14 +220,9 @@ Common patterns used in games:
 
 ---
 
-## Contributing
+## Contributors
 
-Contributions welcome:
-- new packet utilities
-- performance improvements
-- reliability features (ordering, ack system)
-- better debugging/logging tools
-
+griffingreat1
 ---
 
 ## License
