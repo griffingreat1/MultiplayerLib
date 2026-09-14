@@ -48,8 +48,6 @@ The demo is written using pygame and showcases practical real-world usage of the
 
 ## Current Limitations
 
-- UDP without built-in reliability layer
-
 - no automatic NAT traversal
 
 - limited server-side authority/game-state validation
@@ -66,12 +64,12 @@ The demo is written using pygame and showcases practical real-world usage of the
 
 This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
 
-# 🤝 Contributing
+# Contributing
 
 Contributions and merge requests are welcome!  
-Feel free to fork, extend, or integrate MultiplayerLib into your own game projects.
+Feel free to fork, extend, or integrate MultiplayerLib into your own projects.
 
-# ❤️ Author
+# Author
 
 Created by griffingreat1  
 Designed for real-time multiplayer Python game development.

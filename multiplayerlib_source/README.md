@@ -103,7 +103,7 @@ if msg:
 
 - UDP is used for low latency (no built-in reliability)
 - Packet delivery is not guaranteed
-- Ordering is not enforced
+- Ordering is not enforced, however it is suggested that users implement some packet numbering/packet ordering system in their game code. MultiplayerLib is merely intended to send the json packets, how users use them is up to them.
 - Designed for frequent state updates (position, actions, etc.)
 
 ---
