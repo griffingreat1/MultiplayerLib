@@ -75,7 +75,7 @@ class Game:
                 salt = multiplayerlib.DEFAULT_SALT
                 if self.is_host:
                     print("salt is default value")
-        self.networkManager = multiplayerlib.NetworkManager(self.is_host,self.host_ip,use_encryption=self.useEncryption,encryption_key=key,encryption_salt=salt)
+        self.networkManager = multiplayerlib.NetworkManager(self.is_host,self.host_ip,use_encryption=self.useEncryption,encryption_key=key,encryption_salt=salt,enable_logs=True)
         return self.networkManager
     
     # MULTIPLAYER PACKET HANDLING
