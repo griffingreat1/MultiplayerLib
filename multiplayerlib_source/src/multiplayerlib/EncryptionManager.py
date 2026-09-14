@@ -19,8 +19,8 @@ class EncryptionManager:
         self.key = base64.urlsafe_b64encode(kdf.derive(key))
         self.encrypter = Fernet(self.key)
     
-    def encrypt(self,bytesObject):
+    def _encrypt(self,bytesObject):
         return self.encrypter.encrypt(bytesObject)
 
-    def decrypt(self,bytesObject):
+    def _decrypt(self,bytesObject):
         return self.encrypter.decrypt(bytesObject)

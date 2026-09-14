@@ -23,36 +23,36 @@ from queue import Queue
 import traceback
 
 class Peer():
-    registry = {}
-    registry_lock = threading.Lock()
+    _registry = {}
+    _registry_lock = threading.Lock()
     def __init__(self,address):
         self.address = address
-        self.latestPacketTime = time.time()
+        self._latestPacketTime = time.time()
     
-    def heartbeat(self):
-        self.latestPacketTime = time.time()
+    def _heartbeat(self):
+        self._latestPacketTime = time.time()
     
-    def get_is_alive(self):
-        return time.time()-self.latestPacketTime < PEER_TIMEOUT
+    def _get_is_alive(self):
+        return time.time()-self._latestPacketTime < PEER_TIMEOUT
     
     def get_address(self):
         return self.address
 
     @classmethod
     def getInstance(cls, value):
-        with cls.registry_lock:
-            instance = cls.registry.get(value)
+        with cls._registry_lock:
+            instance = cls._registry.get(value)
             if instance is None:
                 instance = cls(value)
-                cls.registry[value] = instance
+                cls._registry[value] = instance
             return instance
 
     @classmethod
     def update_registry(cls):
-        with cls.registry_lock:
-            cls.registry = {
+        with cls._registry_lock:
+            cls._registry = {
                 address: instance
-                for address, instance in cls.registry.items()
+                for address, instance in cls._registry.items()
                 if instance.get_is_alive()
             }
 
@@ -75,37 +75,37 @@ class NetworkManager:
         :param enable_logs: if true, MultiplayerLib will create a log file to log networking events/exceptions. MultiplayerLib by default keeps the latest 2 logs.
         :param log_file_name: the file name to use for log file. this file name will be followed by a suffix to denote which log is more recent.
         """
-        self.should_log = enable_logs
-        self.logQueue = Queue()
+        self._should_log = enable_logs
+        self._logQueue = Queue()
         if enable_logs:
             log_file = Path(f"{log_file_name}_Latest.log")
             destination_file = Path(f"{log_file_name}_Old.log")
             if log_file.is_file():
                 log_file.replace(destination_file)
-            self.logger = logging.getLogger("MultiplayerLibLogger")
-            self.logger.setLevel(logging.DEBUG)
-            self.logger_console_handler = logging.StreamHandler()
-            self.logger_file_handler = logging.FileHandler(f"{log_file_name}_Latest.log")
-            self.logger_console_handler.setLevel(logging.WARNING)
-            self.logger_file_handler.setLevel(logging.DEBUG)
-            self.logger_formatter = logging.Formatter("%(name)s - %(levelname)s - %(message)s")
-            self.logger_console_handler.setFormatter(self.logger_formatter)
-            self.logger_file_handler.setFormatter(self.logger_formatter)
-            self.logger.addHandler(self.logger_console_handler)
-            self.logger.addHandler(self.logger_file_handler)
-            self.loggingThread = threading.Thread(target=self.logWorker,daemon=True).start()
+            self._logger = logging.getLogger("MultiplayerLibLogger")
+            self._logger.setLevel(logging.DEBUG)
+            self._logger_console_handler = logging.StreamHandler()
+            self._logger_file_handler = logging.FileHandler(f"{log_file_name}_Latest.log")
+            self._logger_console_handler.setLevel(logging.WARNING)
+            self._logger_file_handler.setLevel(logging.DEBUG)
+            self._logger_formatter = logging.Formatter("%(name)s - %(levelname)s - %(message)s")
+            self._logger_console_handler.setFormatter(self._logger_formatter)
+            self._logger_file_handler.setFormatter(self._logger_formatter)
+            self._logger.addHandler(self._logger_console_handler)
+            self._logger.addHandler(self._logger_file_handler)
+            self._loggingThread = threading.Thread(target=self._log_worker,daemon=True).start()
 
             
         if use_encryption:
-            self.encryptionManager = EncryptionManager(encryption_key.encode(),encryption_salt)
-            originalMessage = getSamplePacketString()
-            encryptedTestMessage = self.encryptionManager.encrypt(zlib.compress(orjson.dumps(getSamplePacketString())))
-            decryptedTestMessage = orjson.loads(zlib.decompress(self.encryptionManager.decrypt(encryptedTestMessage)))
-            if self.should_log:
-                self.logger.info(f"encryption is working: {originalMessage==decryptedTestMessage}")
+            self._encryption_manager = EncryptionManager(encryption_key.encode(),encryption_salt)
+            original_msg = get_sample_packet_string()
+            enc_test_msg = self._encryption_manager.encrypt(zlib.compress(orjson.dumps(get_sample_packet_string())))
+            unenc_test_msg = orjson.loads(zlib.decompress(self._encryption_manager.decrypt(enc_test_msg)))
+            if self._should_log:
+                self._logger.info(f"encryption is working: {original_msg==unenc_test_msg}")
 
-        self.compress_packets = use_compression
-        self.use_encryption = use_encryption
+        self._compress_packets = use_compression
+        self._use_encryption = use_encryption
 
         self.is_host = is_host
         self.peer_ip = peer_ip
@@ -114,28 +114,28 @@ class NetworkManager:
         self.peer_port = base_port + 1 if is_host else base_port
 
         self.peer_addr = None if is_host else (peer_ip,self.peer_port)
-        self.banned_addr = set()
-        self.banned_addr_lock = threading.Lock()
+        self._banned_addr = set()
+        self._banned_addr_lock = threading.Lock()
 
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 32768)
-        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 32768)
-        self.sock.setsockopt(socket.IPPROTO_IP, socket.IP_TOS, 0x10)
-        self.sock.settimeout(0.5)
+        self._sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self._sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self._sock.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 32768)
+        self._sock.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 32768)
+        self._sock.setsockopt(socket.IPPROTO_IP, socket.IP_TOS, 0x10)
+        self._sock.settimeout(0.5)
 
         try:
-            self.sock.bind(("",self.local_port))
+            self._sock.bind(("",self.local_port))
             print(f"Socket bound to {socket.gethostbyname(socket.gethostname())}:{self.local_port}")
-            if self.should_log:
-                self.logger.debug(f"Socket bound to {socket.gethostbyname(socket.gethostname())}:{self.local_port}")
+            if self._should_log:
+                self._logger.debug(f"Socket bound to {socket.gethostbyname(socket.gethostname())}:{self.local_port}")
         except OSError as e:
             print(f"Socket bind failed on port {self.local_port}: {e}")
-            if self.should_log:
-                self.logger.exception(e)
+            if self._should_log:
+                self._logger.exception(e)
         
         self.running = False
-        self.incoming_queue = Queue()
+        self._incoming_queue = Queue()
     
     def start(self) -> None:
         """
@@ -143,18 +143,18 @@ class NetworkManager:
         """
         self.running = True
         threading.Thread(
-            target=self.recv_loop, 
+            target=self._recv_loop, 
             daemon=True
         ).start()
 
         threading.Thread(
-            target=self.peer_cleanup_loop,
+            target=self._peer_cleanup_loop,
             daemon=True
         ).start()
-        if self.should_log:
-            self.logger.info("NetworkManager started.")
+        if self._should_log:
+            self._logger.info("NetworkManager started.")
 
-    def peer_cleanup_loop(self):
+    def _peer_cleanup_loop(self):
         """
         Periodically remove timed-out peers.
         """
@@ -162,50 +162,50 @@ class NetworkManager:
             Peer.update_registry()
             time.sleep(1)
 
-    def recv_loop(self) -> None:
+    def _recv_loop(self) -> None:
         """
         Continuously receive packets and decode them into the incoming queue.
         """
         while self.running:
             try:
-                data,addr = self.sock.recvfrom(BUFFER_SIZE)
+                data,addr = self._sock.recvfrom(BUFFER_SIZE)
                 if self.is_host:
-                    with self.banned_addr_lock:
-                        banned = addr in self.banned_addr
+                    with self._banned_addr_lock:
+                        banned = addr in self._banned_addr
 
                     if banned:
                         continue
                     peer = Peer.getInstance(addr)
-                    peer.heartbeat()
-                    with Peer.registry_lock:
-                        peers = list(Peer.registry.items())
+                    peer._heartbeat()
+                    with Peer._registry_lock:
+                        peers = list(Peer._registry.items())
 
                     for address, peer in peers:
                         if address != addr:
-                            self.sock.sendto(data, address)
+                            self._sock.sendto(data, address)
                 try:
-                    msg = self.decode_message(data)
-                    self.incoming_queue.put(msg)
+                    msg = self._decode_message(data)
+                    self._incoming_queue.put(msg)
                 except Exception:
-                    if self.should_log:
-                        self.logQueue.put_nowait(traceback.format_exc())
+                    if self._should_log:
+                        self._logQueue.put_nowait(traceback.format_exc())
             except TimeoutError:
                 time.sleep(0.01)
             except Exception:
-                if self.should_log:
-                    self.logQueue.put_nowait(traceback.format_exc())
+                if self._should_log:
+                    self._logQueue.put_nowait(traceback.format_exc())
 
     def ban_addr(self, addr) -> bool:
         """IP bans specified address. returns True if successful, False if called on non host instance."""
         if not self.is_host:
             return False
         try:
-            with self.banned_addr_lock:
-                self.banned_addr.add(addr)
+            with self._banned_addr_lock:
+                self._banned_addr.add(addr)
             return True
         except Exception:
-            if self.should_log:
-                self.logQueue.put_nowait(traceback.format_exc())
+            if self._should_log:
+                self._logQueue.put_nowait(traceback.format_exc())
             return False
 
     def unban_addr(self, addr) -> bool:
@@ -213,12 +213,12 @@ class NetworkManager:
         if not self.is_host:
             return False
         try:
-            with self.banned_addr_lock:
-                self.banned_addr.remove(addr)
+            with self._banned_addr_lock:
+                self._banned_addr.remove(addr)
             return True
         except Exception:
-            if self.should_log:
-                self.logQueue.put_nowait(traceback.format_exc())
+            if self._should_log:
+                self._logQueue.put_nowait(traceback.format_exc())
             return False
 
     def safe_receive(self) -> dict | None:
@@ -226,54 +226,54 @@ class NetworkManager:
         Retrieve the next parsed packet from the incoming queue in a non-blocking way.
         """
         try:
-            return self.incoming_queue.get_nowait()
+            return self._incoming_queue.get_nowait()
         except:
             return None
     
-    def decode_message(self, message_encoded: bytes) -> dict:
+    def _decode_message(self, message_encoded: bytes) -> dict:
         """
         Decode a raw packet into a Python object.
         """
-        if self.use_encryption:
-            message_encoded = self.encryptionManager.decrypt(message_encoded)
-        if self.compress_packets:
+        if self._use_encryption:
+            message_encoded = self._encryption_manager.decrypt(message_encoded)
+        if self._compress_packets:
             message_encoded = zlib.decompress(message_encoded)
         message = orjson.loads(message_encoded)
         return message
 
-    def prepare_message(self, data: dict) -> bytes:
+    def _prepare_message(self, data: dict) -> bytes:
         """
         Prepare a Python object for sending over the network.
         """
         message_encoded = orjson.dumps(data)
-        if self.compress_packets:
+        if self._compress_packets:
             message_encoded = zlib.compress(message_encoded)
-        if self.use_encryption:
-            message_encoded = self.encryptionManager.encrypt(message_encoded)
+        if self._use_encryption:
+            message_encoded = self._encryption_manager.encrypt(message_encoded)
         return message_encoded
 
     def safe_send(self, data: dict) -> None:
         """
         Send a data packet to the currently known peer address.
         """
-        message = self.prepare_message(data)
+        message = self._prepare_message(data)
         if self.is_host:
-            with Peer.registry_lock:
-                peers = list(Peer.registry.items())
+            with Peer._registry_lock:
+                peers = list(Peer._registry.items())
 
             for address, peer in peers:
                 try:
-                    self.sock.sendto(message, address)
+                    self._sock.sendto(message, address)
                 except Exception:
-                    if self.should_log:
-                        self.logQueue.put_nowait(traceback.format_exc())
+                    if self._should_log:
+                        self._logQueue.put_nowait(traceback.format_exc())
         else:
             if self.peer_addr:
                 try:
-                    self.sock.sendto(message, self.peer_addr)
+                    self._sock.sendto(message, self.peer_addr)
                 except Exception:
-                    if self.should_log:
-                        self.logQueue.put_nowait(traceback.format_exc())
+                    if self._should_log:
+                        self._logQueue.put_nowait(traceback.format_exc())
 
     def close(self) -> None:
         """
@@ -281,20 +281,20 @@ class NetworkManager:
         """
         self.running = False
         try:
-            self.sock.close()
-            self.logQueue.put_nowait(None)
+            self._sock.close()
+            self._logQueue.put_nowait(None)
         except Exception:
             pass
 
-    def logWorker(self):
+    def _log_worker(self):
         while True:
-            message = self.logQueue.get()
+            message = self._logQueue.get()
             if message is None:
                 break
 
-            self.logger.error(message)
+            self._logger.error(message)
 
-def getSamplePacketString() -> dict:
+def get_sample_packet_string() -> dict:
     """
     Returns a basic example of a packet in a dictionary structure.
     """
