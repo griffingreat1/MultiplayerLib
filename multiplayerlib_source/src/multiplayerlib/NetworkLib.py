@@ -9,6 +9,7 @@ encryption, and a simple API for sending/receiving JSON-serializable packets.
 """
 
 import random
+import sys
 
 import orjson
 import socket
@@ -16,6 +17,7 @@ import threading
 import time
 from multiplayerlib.NetworkConstants import *
 from multiplayerlib.EncryptionManager import EncryptionManager
+from multiplayerlib.MultiplayerLibExceptions import *
 import zlib
 import logging
 from pathlib import Path
@@ -93,7 +95,7 @@ class NetworkManager:
             self._logger_file_handler.setFormatter(self._logger_formatter)
             self._logger.addHandler(self._logger_console_handler)
             self._logger.addHandler(self._logger_file_handler)
-            self._loggingThread = threading.Thread(target=self._log_worker,daemon=True).start()
+            self._logging_thread = threading.Thread(target=self._log_worker,daemon=True).start()
 
             
         if use_encryption:
@@ -102,7 +104,7 @@ class NetworkManager:
             enc_test_msg = self._encryption_manager.encrypt(zlib.compress(orjson.dumps(get_sample_packet_string())))
             unenc_test_msg = orjson.loads(zlib.decompress(self._encryption_manager.decrypt(enc_test_msg)))
             if self._should_log:
-                self._logger.info(f"encryption is working: {original_msg==unenc_test_msg}")
+                self._logQueue.put_nowait((logging.DEBUG,f"encryption is working: {original_msg==unenc_test_msg}"))
 
         self._compress_packets = use_compression
         self._use_encryption = use_encryption
@@ -128,11 +130,17 @@ class NetworkManager:
             self._sock.bind(("",self.local_port))
             print(f"Socket bound to {socket.gethostbyname(socket.gethostname())}:{self.local_port}")
             if self._should_log:
-                self._logger.debug(f"Socket bound to {socket.gethostbyname(socket.gethostname())}:{self.local_port}")
+                self._logQueue.put_nowait((logging.DEBUG,f"Socket bound to {socket.gethostbyname(socket.gethostname())}:{self.local_port}"))
         except OSError as e:
-            print(f"Socket bind failed on port {self.local_port}: {e}")
             if self._should_log:
-                self._logger.exception(e)
+                self._logQueue.put_nowait((
+                    logging.CRITICAL,
+                    f"Socket bind failed on port {self.local_port}:\n{traceback.format_exc()}"
+                ))
+
+            raise SocketBindError(
+                f"Failed to bind socket to port {self.local_port}"
+            ) from e
         
         self.running = False
         self._incoming_queue = Queue()
@@ -152,7 +160,7 @@ class NetworkManager:
             daemon=True
         ).start()
         if self._should_log:
-            self._logger.info("NetworkManager started.")
+            self._logQueue.put_nowait((logging.INFO,"NetworkManager started."))
 
     def _peer_cleanup_loop(self):
         """
@@ -188,12 +196,12 @@ class NetworkManager:
                     self._incoming_queue.put(msg)
                 except Exception:
                     if self._should_log:
-                        self._logQueue.put_nowait(traceback.format_exc())
+                        self._logQueue.put_nowait((logging.ERROR,traceback.format_exc()))
             except TimeoutError:
                 time.sleep(0.01)
             except Exception:
                 if self._should_log:
-                    self._logQueue.put_nowait(traceback.format_exc())
+                    self._logQueue.put_nowait((logging.ERROR,traceback.format_exc()))
 
     def ban_addr(self, addr) -> bool:
         """IP bans specified address. returns True if successful, False if called on non host instance."""
@@ -205,7 +213,7 @@ class NetworkManager:
             return True
         except Exception:
             if self._should_log:
-                self._logQueue.put_nowait(traceback.format_exc())
+                self._logQueue.put_nowait((logging.ERROR,traceback.format_exc()))
             return False
 
     def unban_addr(self, addr) -> bool:
@@ -218,10 +226,10 @@ class NetworkManager:
             return True
         except Exception:
             if self._should_log:
-                self._logQueue.put_nowait(traceback.format_exc())
+                self._logQueue.put_nowait((logging.ERROR,traceback.format_exc()))
             return False
 
-    def safe_receive(self) -> dict | None:
+    def safe_receive(self) -> JSONValue | None:
         """
         Retrieve the next parsed packet from the incoming queue in a non-blocking way.
         """
@@ -230,7 +238,7 @@ class NetworkManager:
         except:
             return None
     
-    def _decode_message(self, message_encoded: bytes) -> dict:
+    def _decode_message(self, message_encoded: bytes) -> JSONValue:
         """
         Decode a raw packet into a Python object.
         """
@@ -241,7 +249,7 @@ class NetworkManager:
         message = orjson.loads(message_encoded)
         return message
 
-    def _prepare_message(self, data: dict) -> bytes:
+    def _prepare_message(self, data: JSONValue) -> bytes:
         """
         Prepare a Python object for sending over the network.
         """
@@ -252,9 +260,12 @@ class NetworkManager:
             message_encoded = self._encryption_manager.encrypt(message_encoded)
         return message_encoded
 
-    def safe_send(self, data: dict) -> None:
+    def safe_send(self, data: JSONValue) -> None:
         """
         Send a data packet to the currently known peer address.
+        :param data: Data to send. Must consist only of JSON-compatible values:
+        None, bool, int, float, str, lists, and dictionaries with string keys.
+        Lists and dictionaries may contain only JSON-compatible values.
         """
         message = self._prepare_message(data)
         if self.is_host:
@@ -266,14 +277,14 @@ class NetworkManager:
                     self._sock.sendto(message, address)
                 except Exception:
                     if self._should_log:
-                        self._logQueue.put_nowait(traceback.format_exc())
+                        self._logQueue.put_nowait((logging.ERROR,traceback.format_exc()))
         else:
             if self.peer_addr:
                 try:
                     self._sock.sendto(message, self.peer_addr)
                 except Exception:
                     if self._should_log:
-                        self._logQueue.put_nowait(traceback.format_exc())
+                        self._logQueue.put_nowait((logging.ERROR,traceback.format_exc()))
 
     def close(self) -> None:
         """
@@ -282,17 +293,18 @@ class NetworkManager:
         self.running = False
         try:
             self._sock.close()
+            self._logQueue.put_nowait((logging.INFO,"NetworkManager Closed"))
             self._logQueue.put_nowait(None)
         except Exception:
             pass
 
     def _log_worker(self):
         while True:
-            message = self._logQueue.get()
+            level,message = self._logQueue.get()
             if message is None:
                 break
-
-            self._logger.error(message)
+            
+            self._logger.log(level,message)
 
 def get_sample_packet_string() -> dict:
     """

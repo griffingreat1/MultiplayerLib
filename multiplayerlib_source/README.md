@@ -11,6 +11,7 @@ MultiplayerLib is a lightweight UDP networking library designed for simple real-
 - [Quick Start](#quick-start-example)
 - [Architecture Overview](#architecture-overview)
 - [API Reference](#api-reference)
+- [Data Types](#data-types)
 - [Packet Examples](#packet-examples)
 - [Troubleshooting](#troubleshooting--tips)
 - [Security Notes](#security-notes)
@@ -162,6 +163,23 @@ UDP packet → decrypt → decompress → JSON decode → dict
 - Uses PBKDF2-derived key + Fernet encryption
 - Requires identical key/salt on both sides
 - Encrypt/decrypt operates on bytes
+
+---
+
+## Data Types
+
+MultiplayerLib uses JSON serialization for packets. Data passed to
+`safe_send()` must be composed of JSON-compatible values:
+
+- `None`
+- `bool`
+- `int`
+- `float`
+- `str`
+- `list`
+- `dict` with string keys
+
+Lists and dictionaries can be nested arbitrarily, but may only contain JSON compatible types.
 
 ---
 

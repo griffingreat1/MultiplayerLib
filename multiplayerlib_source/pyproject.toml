@@ -1,6 +1,6 @@
 [project]
 name = "multiplayerlib"
-version = "0.1.1"
+version = "0.1.2"
 description = "MultiplayerLib - A highly compatable and lightweight Python multiplayer networking library for game development"
 requires-python = ">=3.10"
 dependencies = [
