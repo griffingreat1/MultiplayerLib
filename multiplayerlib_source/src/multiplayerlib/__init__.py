@@ -9,7 +9,25 @@ connects, although there are plans for adding support for more than just 1v1 gam
 """
 from multiplayerlib.NetworkLib import *
 from multiplayerlib.NetworkConstants import *
+import urllib.request
+import json
+from importlib.metadata import version
+from packaging import version
 
-def help():
-    print("example packet:")
-    getSamplePacketString()
+def checkForUpdates() -> bool:
+    """
+    checks if MultiplayerLib is on the latest version using the Python Package Index (PyPI) api.
+    returns true if there is a new version available.
+    """
+    currentVersion = version("multiplayerlib")
+    try:
+        with urllib.request.urlopen(
+            "https://pypi.org/pypi/multiplayerlib/json",
+            timeout=2
+        ) as response:
+            latestVersion = json.load(response)["info"]["version"]
+        if version(latestVersion) > version(currentVersion):
+            return True
+        return False
+    except Exception:
+        return False

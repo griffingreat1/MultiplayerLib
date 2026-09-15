@@ -25,6 +25,9 @@ from queue import Queue
 import traceback
 
 class Peer():
+    """
+    Helper class for managing connected peers. It is highly recommended not to modify or call this class in your own code unless you are confident that you know what you are doing.
+    """
     _registry = {}
     _registry_lock = threading.Lock()
     def __init__(self,address):

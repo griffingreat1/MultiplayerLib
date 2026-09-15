@@ -113,6 +113,10 @@ if msg:
 
 ## API Reference
 
+### MultiplayerLib
+- `checkForUpdates()`
+  checks PyPI for a more recent release of multiplayerlib. returns true if update available. returns false if the pypi api is unreachable or if current version matches latest version.
+
 ### NetworkManager
 
 #### Constructor
