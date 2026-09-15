@@ -9,8 +9,6 @@ encryption, and a simple API for sending/receiving JSON-serializable packets.
 """
 
 import random
-import sys
-
 import orjson
 import socket
 import threading
