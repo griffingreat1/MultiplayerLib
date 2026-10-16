@@ -22,5 +22,5 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project.urls]
-Homepage = "https://github.com/griffingreat1/MultiplayerLib/tree/main/multiplayerlib_source"
+Homepage = "https://github.com/griffingreat1/MultiplayerLib"
 "Discord: @griffingreat1" = "https://discord.com"
