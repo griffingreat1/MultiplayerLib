@@ -1,6 +1,6 @@
 [project]
 name = "multiplayerlib"
-version = "0.1.4.post1"
+version = "0.1.4.post3"
 description = "MultiplayerLib - A highly compatible and lightweight Python multiplayer networking library for game development"
 requires-python = ">=3.10"
 dependencies = [
@@ -20,3 +20,7 @@ classifiers = [
 [build-system]
 requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
+
+[project.urls]
+Homepage = "https://github.com/griffingreat1/MultiplayerLib"
+"Discord: @griffingreat1" = "https://discord.com"

@@ -2,7 +2,6 @@
 
 MultiplayerLib is a lightweight UDP networking library designed for simple real-time multiplayer games. It provides a minimal, easy-to-integrate API for fast client-server communication with optional compression and encryption.
 
-- source code along with demo game can be found [here](https://github.com/griffingreat1/MultiplayerLib)
 ---
 
 ## Table of Contents
