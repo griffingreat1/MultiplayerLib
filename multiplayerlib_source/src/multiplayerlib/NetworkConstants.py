@@ -11,9 +11,10 @@ JSONValue: TypeAlias = (
     | dict[str, "JSONValue"]
 )
 
-BUFFER_SIZE = 1024
-DEFAULT_PORT = 5000
+MPL_DEFAULT_BUFFER_SIZE = 1024
+MPL_DEFAULT_PORT = 5000
 
-DEFAULT_KEY = "encryptionKeyForFernetEncryption"
-DEFAULT_SALT = 2815
-PEER_TIMEOUT = 5
+MPL_DEFAULT_KEY = "encryptionKeyForFernetEncryption"
+MPL_DEFAULT_SALT = 2815
+MPL_DEFAULT_PEER_TIMEOUT = 5
+MPL_DEFAULT_LOG_FILENAME = "MultiplayerLib_Logs"

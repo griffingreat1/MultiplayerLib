@@ -1,11 +1,12 @@
 [project]
 name = "multiplayerlib"
-version = "0.1.4.post3"
+version = "0.1.5"
 description = "MultiplayerLib - A highly compatible and lightweight Python multiplayer networking library for game development"
 requires-python = ">=3.10"
 dependencies = [
     "cryptography>=3.4.8",
     "orjson>=3.9.0",
+    "packaging>=20.0"
 ]
 readme = "README.md"
 authors = [

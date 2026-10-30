@@ -2,7 +2,7 @@
 # see LICENSE file at root of this repository for details.
 
 """
-Network utilities and a NetworkManager for peer-to-peer UDP communication.
+NetworkManager for peer-to-peer UDP communication.
 
 Provides helpers for encoding/decoding messages, optional compression and
 encryption, and a simple API for sending/receiving JSON-serializable packets.
@@ -16,48 +16,12 @@ import time
 from multiplayerlib.NetworkConstants import *
 from multiplayerlib.EncryptionManager import EncryptionManager
 from multiplayerlib.MultiplayerLibExceptions import *
+from multiplayerlib.Peer import *
 import zlib
 import logging
 from pathlib import Path
 from queue import Queue
 import traceback
-
-class Peer():
-    """
-    Helper class for managing connected peers. It is highly recommended not to modify or call this class in your own code unless you are confident that you know what you are doing.
-    """
-    _registry = {}
-    _registry_lock = threading.Lock()
-    def __init__(self,address):
-        self.address = address
-        self._latestPacketTime = time.time()
-    
-    def _heartbeat(self):
-        self._latestPacketTime = time.time()
-    
-    def _get_is_alive(self):
-        return time.time()-self._latestPacketTime < PEER_TIMEOUT
-    
-    def get_address(self):
-        return self.address
-
-    @classmethod
-    def getInstance(cls, value):
-        with cls._registry_lock:
-            instance = cls._registry.get(value)
-            if instance is None:
-                instance = cls(value)
-                cls._registry[value] = instance
-            return instance
-
-    @classmethod
-    def update_registry(cls):
-        with cls._registry_lock:
-            cls._registry = {
-                address: instance
-                for address, instance in cls._registry.items()
-                if instance.get_is_alive()
-            }
 
 class NetworkManager:
     """
@@ -66,15 +30,17 @@ class NetworkManager:
     Handles socket setup, optional compression and encryption of packets, and
     provides a background receiving loop to accumulate incoming messages.
     """
-    def __init__(self, is_host=True, peer_ip=None, base_port=DEFAULT_PORT, use_compression=False, use_encryption=False, encryption_key=DEFAULT_KEY, encryption_salt=DEFAULT_SALT, enable_logs = False, log_file_name="MultiplayerLib_Logs") -> None:
+    def __init__(self, is_host=True, peer_ip=None, base_port=MPL_DEFAULT_PORT, buffer_size=MPL_DEFAULT_BUFFER_SIZE, use_compression=False, use_encryption=False, peer_timeout=MPL_DEFAULT_PEER_TIMEOUT, encryption_key=MPL_DEFAULT_KEY, encryption_salt=MPL_DEFAULT_SALT, enable_logs = False, log_file_name=MPL_DEFAULT_LOG_FILENAME) -> None:
         """
         Network Manager
         
         :param is_host: host server or connect to server
         :param peer_ip: ip address of peer (only required if client is NOT the server host)
         :param base_port: the base port for the server. server hosts recv on this port and client hosts recv on base_port + 1. client sends to base_port and server sends to base_port + 1
+        :param buffer_size: Maximum size, in bytes, of an individual UDP packet that can be received. Packets exceeding this size will be truncated.
         :param use_compression: if true, packets will be compressed. this allows for reduced size of packets. defaults to true. (most UDP packets should be small enough that this isnt needed)
         :param use_encryption: if true, packets will be encrypted before sending.
+        :param peer_timeout: Maximum time, in seconds, since a peer's last received packet before that peer is considered disconnected and removed from the peer registry.
         :param enable_logs: if true, MultiplayerLib will create a log file to log networking events/exceptions. MultiplayerLib by default keeps the latest 2 logs.
         :param log_file_name: the file name to use for log file. this file name will be followed by a suffix to denote which log is more recent.
         """
@@ -107,8 +73,12 @@ class NetworkManager:
             if self._should_log:
                 self._logQueue.put_nowait((logging.DEBUG,f"encryption is working: {original_msg==unenc_test_msg}"))
 
+        self._buffer_size = buffer_size
+
         self._compress_packets = use_compression
         self._use_encryption = use_encryption
+
+        self.peer_timeout = peer_timeout
 
         self.is_host = is_host
         self.peer_ip = peer_ip
@@ -122,6 +92,12 @@ class NetworkManager:
 
         self._sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self._sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+
+        # These values generally should not need to be changed. However, if you are
+        # sending particularly large amounts of data or receiving packets faster than
+        # your application can process them, increasing these buffers will allow the
+        # operating system to queue more incoming/outgoing data before it is processed
+        # or transmitted by the socket.
         self._sock.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 32768)
         self._sock.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 32768)
         self._sock.setsockopt(socket.IPPROTO_IP, socket.IP_TOS, 0x10)
@@ -177,14 +153,14 @@ class NetworkManager:
         """
         while self.running:
             try:
-                data,addr = self._sock.recvfrom(BUFFER_SIZE)
+                data,addr = self._sock.recvfrom(self._buffer_size)
                 if self.is_host:
                     with self._banned_addr_lock:
                         banned = addr in self._banned_addr
 
                     if banned:
                         continue
-                    peer = Peer.getInstance(addr)
+                    peer = Peer.getInstance(addr,self.peer_timeout)
                     peer._heartbeat()
                     with Peer._registry_lock:
                         peers = list(Peer._registry.items())

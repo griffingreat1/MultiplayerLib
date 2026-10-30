@@ -28,7 +28,7 @@ MultiplayerLib is a lightweight UDP networking library designed for simple real-
 - JSON-based packet formatting (human readable)
 - Background threaded receive loop
 - Safe send/receive queue system
-- Minimal API surface: `NetworkManager`, `EncryptionManager`
+- Easy to use API - `NetworkManager`
 - Built in logging.
 - Methods for the host to ban certain addresses.
 
@@ -123,11 +123,15 @@ if msg:
 NetworkManager(
     is_host=True,
     peer_ip=None,
-    base_port=5000,
+    base_port=MPL_DEFAULT_PORT,
+    buffer_size=MPL_DEFAULT_BUFFER_SIZE,
     use_compression=True,
     use_encryption=False,
-    encryption_key=DEFAULT_KEY,
-    encryption_salt=DEFAULT_SALT
+    peer_timeout=MPL_DEFAULT_PEER_TIMEOUT,
+    encryption_key=MPL_DEFAULT_KEY,
+    encryption_salt=MPL_DEFAULT_SALT,
+    enable_logs = False,
+    log_file_name=MPL_DEFAULT_LOG_FILENAME
 )
 ```
 
@@ -221,7 +225,6 @@ Common patterns used in games:
 ```
 
 ---
-
 
 ## Troubleshooting & Tips
 
