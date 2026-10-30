@@ -82,4 +82,4 @@ GameUtils/
  
 `basicMultiplayerGame.py` is the best place to start if you want to see how the library is used. It shows how to create the `NetworkManager`, send packets, and receive and handle them.
 
-To see how NetworkManager actually works, be sure to check out the [library documentation](../multiplayerlib_source/README.md)
+To see how NetworkManager actually works, be sure to check out the [library documentation](../multiplayerlib_source/)
